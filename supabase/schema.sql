@@ -549,6 +549,28 @@ revoke execute on function public._upsert_cliente(jsonb) from public, anon, auth
 revoke execute on function public._upsert_vehiculo(jsonb, bigint) from public, anon, authenticated;
 revoke execute on function public.nuevo_usuario() from public, anon, authenticated;
 
+-- Funciones que la app llama (rpc): solo usuarios autenticados. Cada una valida el rol con _exigir.
+do $$
+declare f text;
+begin
+  foreach f in array array[
+    'public.crear_producto(jsonb)', 'public.registrar_venta(jsonb)', 'public.anular_venta(bigint, text)',
+    'public.registrar_compra(jsonb)', 'public.anular_compra(bigint)', 'public.aplicar_conteo(jsonb)',
+    'public.dashboard()', 'public.recordatorios(int)', 'public.reporte(date, date)', 'public.mi_rol()'] loop
+    execute format('revoke execute on function %s from public, anon', f);
+    execute format('grant execute on function %s to authenticated', f);
+  end loop;
+end $$;
+grant usage on schema public to authenticated;
+
+-- Funciones internas: solo las usan otras funciones (security definer), nunca la app
+revoke execute on function public._exigir(text[]) from public, anon, authenticated;
+revoke execute on function public._norm_placa(text) from public, anon, authenticated;
+revoke execute on function public._txt(jsonb, text) from public, anon, authenticated;
+alter function public._norm_placa(text) set search_path = public;
+alter function public._txt(jsonb, text) set search_path = public;
+alter function public.proteger_admin() set search_path = public;
+
 -- ---------- Tiempo real (stock en vivo entre equipos) ----------
 do $$
 begin

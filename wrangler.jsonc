@@ -12,8 +12,8 @@
   // Valores PÚBLICOS (la anon key es pública por diseño; la seguridad la da RLS).
   // La service key va como secreto: npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
   "vars": {
-    "SUPABASE_URL": "",
-    "SUPABASE_ANON_KEY": "",
+    "SUPABASE_URL": "https://cbrcibsbltauzrswrlgl.supabase.co",
+    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNicmNpYnNibHRhdXpyc3dybGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1NTA0NTQsImV4cCI6MjExMTEyNjQ1NH0.tndGg5hzKnNlBJbWeTpYwTgMNv_2-MAg81F24u_zN4Q",
     "NOMBRE_NEGOCIO": "Lubricentro Ramos",
     "RUC": "",
     "DIRECCION": "Juliaca - Puno",
