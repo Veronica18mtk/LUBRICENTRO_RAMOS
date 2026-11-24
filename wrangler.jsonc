@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lubricentro-ramos",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist/lubricentro-ramos/browser",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/config.js"]
+  },
+  // Valores PÚBLICOS (la anon key es pública por diseño; la seguridad la da RLS).
+  // La service key va como secreto: npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+  "vars": {
+    "SUPABASE_URL": "",
+    "SUPABASE_ANON_KEY": "",
+    "NOMBRE_NEGOCIO": "Lubricentro Ramos",
+    "RUC": "",
+    "DIRECCION": "Juliaca - Puno",
+    "TELEFONO": ""
+  }
+}
