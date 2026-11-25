@@ -167,3 +167,7 @@ td input { min-height: 38px; padding: 6px 8px; }
   .checkout-bar .btn { min-width: 130px; min-height: 48px; }
   .main:has(.checkout-bar) { padding-bottom: 170px; }
 }
+/* Foto con IA y código pendiente */
+.foto-ia .btn { cursor: pointer; }
+.foto-ia .btn.disabled { opacity: .6; pointer-events: none; }
+.campo-alerta { border-color: var(--accent) !important; background: var(--warn-bg); }

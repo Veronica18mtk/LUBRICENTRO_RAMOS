@@ -3,6 +3,8 @@
   "name": "lubricentro-ramos",
   "main": "worker/index.ts",
   "compatibility_date": "2026-11-01",
+  // Workers AI: reconocimiento de etiquetas por foto (10.000 neuronas gratis al día)
+  "ai": { "binding": "AI" },
   "assets": {
     "directory": "./dist/lubricentro-ramos/browser",
     "binding": "ASSETS",

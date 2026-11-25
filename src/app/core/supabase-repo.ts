@@ -52,6 +52,7 @@ export class SupabaseRepo implements Repo {
   async recuperar(email: string) { ok(await this.sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/cuenta' })); }
   async cambiarPassword(nueva: string) { ok(await this.sb.auth.updateUser({ password: nueva })); }
   async salir() { await this.sb.auth.signOut(); }
+  async accessToken(): Promise<string | null> { const { data } = await this.sb.auth.getSession(); return data.session?.access_token || null; }
 
   // ---------- productos ----------
   async productos() {

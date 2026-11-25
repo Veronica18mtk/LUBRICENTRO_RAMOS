@@ -57,6 +57,8 @@ export class Store {
     return this._repo;
   }
   get local(): LocalRepo | null { return this.repo instanceof LocalRepo ? this.repo : null; }
+  /** Token de la sesión en la nube (null en modo local) */
+  async token(): Promise<string | null> { return this.repo instanceof SupabaseRepo ? this.repo.accessToken() : null; }
 
   private leerModo(): Modo | null {
     try {

@@ -7,6 +7,7 @@ App web instalable (PWA) para controlar el **stock real** del Lubricentro Ramos 
 | Módulo | Para qué |
 |---|---|
 | **Nueva orden** | Placa → trae cliente e historial. Agrega aceite (por galón o litro a granel), filtros y mano de obra. Calcula el próximo cambio (km y fecha). Cobro en Efectivo / Yape / Plin / Tarjeta / Transferencia / Crédito. Ticket para imprimir (80 mm) o enviar por WhatsApp. |
+| **Foto con IA** | En *Nuevo producto*, una foto de la etiqueta llena nombre, marca, categoría y unidad (Cloudflare Workers AI, plan gratuito: ~150 fotos/día). Si el código de barras no se ve o no pasa el dígito verificador, el campo queda resaltado con el botón **📷 Escanear**. |
 | **Inventario** | Stock en vivo, alertas de stock mínimo, búsqueda por código de barras (cámara del celular o lector USB), **kardex** por producto, exportar a Excel. |
 | **Compras** | Cada factura o guía del proveedor suma stock y recalcula el **costo promedio**. |
 | **Conteo físico** | Se cuenta el estante y el sistema registra la diferencia como AJUSTE (con usuario y fecha). |

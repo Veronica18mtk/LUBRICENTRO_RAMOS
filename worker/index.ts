@@ -3,6 +3,7 @@
 //  - POST /api/admin-users  -> un admin crea usuarios (usa la service key, que nunca llega al navegador)
 export interface Env {
   ASSETS: Fetcher;
+  AI: Ai; // Workers AI (visión) para reconocer etiquetas
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_ROLE_KEY?: string; // secreto: wrangler secret put SUPABASE_SERVICE_ROLE_KEY
@@ -36,6 +37,11 @@ export default {
     if (url.pathname === '/api/admin-users') {
       if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
       return crearUsuario(req, env);
+    }
+
+    if (url.pathname === '/api/reconocer') {
+      if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
+      return reconocerEtiqueta(req, env);
     }
 
     const m = url.pathname.match(/^\/api\/codigo\/(\d{8,14})$/);
@@ -85,6 +91,98 @@ async function upcItemDb(codigo: string): Promise<Hallazgo | null> {
     if (!it?.title) return null;
     return { nombre: it.title.trim(), marca: it.brand || null, cantidad: it.size || null, categorias: it.category || '', fuente: 'UPCitemdb' };
   } catch { return null; }
+}
+
+// ---------- Reconocimiento de etiquetas con IA (Workers AI, plan gratuito) ----------
+const MODELO_VISION = '@cf/meta/llama-4-scout-17b-16e-instruct';
+const CATEGORIAS = ['Aceite de motor', 'Aceite de caja / transmisión', 'Filtro de aceite', 'Filtro de aire', 'Filtro de combustible',
+  'Filtro de cabina', 'Aditivo', 'Refrigerante', 'Líquido de frenos', 'Grasa', 'Accesorios', 'Otros'];
+const ESQUEMA = {
+  type: 'object',
+  properties: {
+    es_producto: { type: 'boolean' },
+    nombre: { type: 'string' },
+    marca: { type: 'string' },
+    categoria: { type: 'string', enum: CATEGORIAS },
+    unidad: { type: 'string', enum: ['UND', 'GAL', 'QT', 'L', 'KG', 'JGO'] },
+    viscosidad: { type: 'string' },
+    presentacion: { type: 'string' },
+    norma: { type: 'string' },
+    codigo_barras: { type: 'string' },
+  },
+  required: ['es_producto', 'nombre', 'marca', 'categoria', 'unidad', 'viscosidad', 'presentacion', 'norma', 'codigo_barras'],
+};
+const INSTRUCCIONES = `Eres el asistente de inventario de un lubricentro en Perú. Mira la foto de UN producto (aceite, filtro, aditivo, refrigerante, grasa, etc.) y extrae solo lo que se lee en la etiqueta.
+Reglas:
+- nombre: nombre comercial corto en español, con viscosidad y presentación si se ven. Ej.: "Mobil Super 2000 20W-50 (1 gal)", "Filtro de aceite Wix 51348".
+- marca: la marca impresa (Mobil, Chevron, Vistony, Castrol, Shell, Wix, Fleetguard...).
+- unidad: GAL si es galón (3,78 L), QT si es cuarto (946 ml), L si es un envase a granel por litro, KG para grasas por kilo, JGO para juegos; si no, UND.
+- viscosidad: como "20W-50"; vacío si no aplica. norma: como "API SN" o "DOT 4"; vacío si no se ve.
+- codigo_barras: SOLO los dígitos del código de barras (EAN/UPC) si se leen completos y nítidos en la foto; si no se ve o está borroso, cadena vacía. Nunca inventes dígitos.
+- Si un dato no se ve, devuelve cadena vacía. No inventes.
+- es_producto: false si la foto no muestra un producto.`;
+
+async function reconocerEtiqueta(req: Request, env: Env): Promise<Response> {
+  // Solo usuarios con sesión activa (protege la cuota diaria gratuita)
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!token) return json({ error: 'Inicia sesión en modo nube para usar el reconocimiento por foto' }, 401);
+  const quien = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } });
+  if (!quien.ok) return json({ error: 'Sesión inválida' }, 401);
+
+  const b = (await req.json().catch(() => ({}))) as { imagen?: string };
+  const imagen = b.imagen || '';
+  if (!/^data:image\/(jpeg|png|webp);base64,/.test(imagen)) return json({ error: 'Imagen inválida' }, 400);
+  if (imagen.length > 2_500_000) return json({ error: 'La imagen es muy grande' }, 413);
+
+  let salida: unknown;
+  try {
+    const r = (await env.AI.run(MODELO_VISION as keyof AiModels, {
+      messages: [
+        { role: 'system', content: INSTRUCCIONES },
+        { role: 'user', content: [{ type: 'text', text: 'Extrae los datos de este producto.' }, { type: 'image_url', image_url: { url: imagen } }] },
+      ],
+      response_format: { type: 'json_schema', json_schema: ESQUEMA },
+      max_tokens: 600,
+      temperature: 0.1,
+    } as never)) as { response?: unknown };
+    salida = r?.response;
+  } catch (e) {
+    const msg = String((e as Error)?.message || e);
+    if (/4006|daily free allocation|neurons/i.test(msg)) return json({ error: 'Se agotó la cuota gratuita de IA de hoy. Vuelve a intentarlo mañana o registra el producto a mano.' }, 429);
+    return json({ error: 'No se pudo analizar la foto. Intenta de nuevo con mejor luz.' }, 502);
+  }
+  const d = interpretar(salida);
+  if (!d) return json({ error: 'No se pudo leer la etiqueta. Toma la foto más de cerca y con buena luz.' }, 422);
+  if (d['es_producto'] === false) return json({ error: 'No se reconoce un producto en la foto.' }, 422);
+
+  // Doble validación del código: solo dígitos y dígito verificador correcto
+  const leido = String(d['codigo_barras'] || '').replace(/\D/g, '');
+  const codigoValido = leido && codigoEsValido(leido) ? leido : null;
+  return json({
+    nombre: limpiar(d['nombre']), marca: limpiar(d['marca']),
+    categoria: CATEGORIAS.includes(String(d['categoria'])) ? d['categoria'] : 'Otros',
+    unidad: ['UND', 'GAL', 'QT', 'L', 'KG', 'JGO'].includes(String(d['unidad'])) ? d['unidad'] : 'UND',
+    viscosidad: limpiar(d['viscosidad']), presentacion: limpiar(d['presentacion']), norma: limpiar(d['norma']),
+    codigo_barras: codigoValido,
+    codigo_estado: codigoValido ? 'valido' : leido ? 'invalido' : 'no_visible',
+  });
+}
+
+function interpretar(x: unknown): Record<string, unknown> | null {
+  if (x && typeof x === 'object') return x as Record<string, unknown>;
+  if (typeof x !== 'string') return null;
+  const m = x.match(/\{[\s\S]*\}/);
+  try { return m ? JSON.parse(m[0]) : null; } catch { return null; }
+}
+const limpiar = (v: unknown) => String(v ?? '').trim().slice(0, 120) || null;
+
+/** Valida EAN-8, UPC-A (12), EAN-13 y GTIN-14 por su dígito verificador */
+export function codigoEsValido(c: string): boolean {
+  if (![8, 12, 13, 14].includes(c.length)) return false;
+  const d = c.split('').map(Number);
+  const control = d.pop()!;
+  const suma = d.reverse().reduce((s, n, i) => s + n * (i % 2 === 0 ? 3 : 1), 0);
+  return (10 - (suma % 10)) % 10 === control;
 }
 
 // País de registro del código (prefijo GS1), útil cuando no hay datos
