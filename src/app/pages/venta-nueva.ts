@@ -32,12 +32,12 @@ interface Linea { producto: Producto; cantidad: number; precio: number }
             </div>
           } @else if (placaNueva()) { <p class="muted small">Placa nueva: se registrará al guardar.</p> }
           <div class="grid g3">
-            <div class="field"><label>Marca</label><input [(ngModel)]="veh.marca" placeholder="Toyota"></div>
-            <div class="field"><label>Modelo</label><input [(ngModel)]="veh.modelo" placeholder="Hilux"></div>
+            <div class="field"><label>Marca</label><input [(ngModel)]="veh.marca" placeholder="Ej. Toyota"></div>
+            <div class="field"><label>Modelo</label><input [(ngModel)]="veh.modelo" placeholder="Ej. Hilux"></div>
             <div class="field"><label>Año</label><input [(ngModel)]="veh.anio" inputmode="numeric" maxlength="4"></div>
           </div>
           <div class="grid g2">
-            <div class="field"><label>Kilometraje actual</label><input [(ngModel)]="kmActual" (ngModelChange)="sugerirKm()" inputmode="numeric" placeholder="85000"></div>
+            <div class="field"><label>Kilometraje actual</label><input [(ngModel)]="kmActual" (ngModelChange)="sugerirKm()" inputmode="numeric" placeholder="Ej. 85000"></div>
             <div class="field"><label>Próximo cambio (km)</label><input [(ngModel)]="kmProximo" inputmode="numeric"></div>
           </div>
           <div class="row small" style="margin:-4px 0 10px">
@@ -113,6 +113,13 @@ interface Linea { producto: Producto; cantidad: number; precio: number }
         </div>
       </div>
     </div>
+
+    @if (lineas().length) {
+      <div class="checkout-bar no-print" aria-live="polite">
+        <div><div class="muted small">{{ lineas().length }} ítem(s) · {{ metodo }}</div><b>{{ soles(total()) }}</b></div>
+        <button class="btn primary" [disabled]="guardando()" (click)="guardar()">{{ guardando() ? 'Guardando…' : '✔ Cobrar' }}</button>
+      </div>
+    }
 
     @if (nuevoCodigo() !== null) {
       <app-producto-form [codigoInicial]="nuevoCodigo()!" (guardado)="creado($event)" (cerrar)="nuevoCodigo.set(null)" />

@@ -25,11 +25,11 @@ import { cant, fecha, soles, verPlaca, whatsapp } from '../core/util';
     @if (d(); as d) {
       <div class="grid g4">
         <div class="card stat"><div class="label">Ventas de hoy</div><div class="value">{{ soles(d.ventas_hoy.total) }}</div><div class="muted small">{{ d.ventas_hoy.n }} órdenes</div></div>
-        <div class="card stat"><div class="label">Stock bajo</div><div class="value" [style.color]="d.stock_bajo.length ? 'var(--warn)' : ''">{{ d.stock_bajo.length }}</div><div class="muted small">de {{ d.n_productos }} productos</div></div>
+        <a class="card stat stat-link" routerLink="/productos" [queryParams]="{ bajo: 1 }" aria-label="Ver productos con stock bajo"><div class="label">Stock bajo ›</div><div class="value" [style.color]="d.stock_bajo.length ? 'var(--warn)' : ''">{{ d.stock_bajo.length }}</div><div class="muted small">de {{ d.n_productos }} productos</div></a>
         @if (d.valor_inventario !== null) {
           <div class="card stat"><div class="label">Inventario valorizado</div><div class="value">{{ soles(d.valor_inventario) }}</div><div class="muted small">a precio de costo</div></div>
         }
-        <div class="card stat"><div class="label">Por cobrar hoy</div>
+        <div class="card stat"><div class="label">Cobrado hoy por método</div>
           <div class="small" style="margin-top:6px">
             @for (m of d.por_metodo; track m.metodo_pago) { <div class="row" style="justify-content:space-between"><span>{{ m.metodo_pago }}</span><b>{{ soles(m.total) }}</b></div> }
             @empty { <span class="muted">Sin ventas aún</span> }

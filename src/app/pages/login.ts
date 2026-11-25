@@ -11,7 +11,7 @@ import { textoError } from '../core/util';
   template: `
     <div class="login">
       <div class="card">
-        <div class="brand"><img src="icons/icono.svg" alt="" width="40" height="40"><div>{{ store.negocio.nombre }}<small>Inventario y servicios</small></div></div>
+        <div class="brand"><svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f2a44"/><path d="M32 12c-7 10-14 18-14 26a14 14 0 0 0 28 0c0-8-7-16-14-26z" fill="#f5a524"/></svg><div>{{ store.negocio.nombre }}<small>Inventario y servicios</small></div></div>
 
         @if (pendiente()) {
           <div class="alert warn">Tu cuenta <b>{{ pendiente() }}</b> está pendiente de activación. Pide al administrador que la active en <b>Usuarios</b>.</div>

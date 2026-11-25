@@ -146,3 +146,24 @@ td input { min-height: 38px; padding: 6px 8px; }
   .card { border: 0; box-shadow: none; padding: 0; }
   @page { margin: 4mm; }
 }
+
+/* --- Mejoras de UX (auditoría) --- */
+/* Foco visible al usar teclado o lector USB */
+.btn:focus-visible, .chip:focus-visible, a:focus-visible, .icon-btn:focus-visible, .search-results button:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px;
+}
+.stat-link { display: block; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+.stat-link:hover { border-color: var(--warn); transform: translateY(-1px); }
+/* Barra de cobro fija: solo en celular, encima del menú inferior */
+.checkout-bar { display: none; }
+@media (max-width: 820px) {
+  .hide-sm { display: none; }
+  .checkout-bar {
+    display: flex; position: fixed; left: 0; right: 0; bottom: calc(58px + env(safe-area-inset-bottom));
+    z-index: 19; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--surface); border-top: 1px solid var(--border); padding: 10px 16px; box-shadow: 0 -4px 12px rgba(16,24,40,.08);
+  }
+  .checkout-bar b { font-size: 1.25rem; }
+  .checkout-bar .btn { min-width: 130px; min-height: 48px; }
+  .main:has(.checkout-bar) { padding-bottom: 170px; }
+}

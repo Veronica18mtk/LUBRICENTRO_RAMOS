@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { CATEGORIAS, Movimiento, Producto } from '../core/models';
 import { Store } from '../core/store';
 import { Ui } from '../core/ui';
@@ -37,20 +38,20 @@ import { Scanner } from '../shared/scanner';
     <div class="card">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Producto</th><th>Categoría</th><th class="right">Stock</th><th class="right">Precio</th>
-            @if (!esMecanico()) { <th class="right">Costo</th> }<th>Ubicación</th></tr></thead>
+          <thead><tr><th>Producto</th><th class="hide-sm">Categoría</th><th class="right">Stock</th><th class="right">Precio</th>
+            @if (!esMecanico()) { <th class="right hide-sm">Costo</th> }<th class="hide-sm">Ubicación</th></tr></thead>
           <tbody>
             @for (p of filtrados(); track p.id) {
               <tr class="click" (click)="ver(p)">
                 <td><b>{{ p.nombre }}</b>@if (!p.activo) { <span class="badge">inactivo</span> }<div class="muted small">{{ p.marca || '' }} {{ p.codigo_barras ? '· ' + p.codigo_barras : '' }}</div></td>
-                <td class="small">{{ p.categoria }}</td>
+                <td class="small hide-sm">{{ p.categoria }}</td>
                 <td class="right nowrap">
                   @if (p.es_servicio) { <span class="badge">servicio</span> }
                   @else { <span [class]="p.stock <= 0 ? 'badge bad' : p.stock <= p.stock_minimo ? 'badge warn' : 'badge ok'">{{ cant(p.stock) }} {{ p.unidad }}</span> }
                 </td>
                 <td class="right nowrap">{{ soles(p.precio_venta) }}</td>
-                @if (!esMecanico()) { <td class="right nowrap muted">{{ p.es_servicio ? '' : soles(p.precio_compra) }}</td> }
-                <td class="small muted">{{ p.ubicacion || '' }}</td>
+                @if (!esMecanico()) { <td class="right nowrap muted hide-sm">{{ p.es_servicio ? '' : soles(p.precio_compra) }}</td> }
+                <td class="small muted hide-sm">{{ p.ubicacion || '' }}</td>
               </tr>
             } @empty { <tr><td colspan="6" class="empty">No hay productos. @if (store.puedeGestionar()) { Crea el primero con “Nuevo producto”. }</td></tr> }
           </tbody>
@@ -107,7 +108,7 @@ export class Productos {
   soles = soles; cant = cant; fechaHora = fechaHora;
   readonly q = signal('');
   readonly cat = signal('');
-  readonly bajo = signal(false);
+  readonly bajo = signal(inject(ActivatedRoute).snapshot.queryParamMap.has('bajo'));
   readonly inactivos = signal(false);
   readonly detalle = signal<Producto | null>(null);
   readonly kardex = signal<Movimiento[]>([]);

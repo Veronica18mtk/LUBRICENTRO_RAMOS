@@ -4,17 +4,22 @@ import { Rol } from './core/models';
 import { Store } from './core/store';
 import { Shell } from './shell';
 
-let iniciado = false;
+// Restaura la sesión una sola vez; todos los guards esperan el mismo arranque.
+let arranque: Promise<unknown> | null = null;
+const listo = (store: Store) => (arranque ||= store.iniciar());
+
 const sesion: CanActivateFn = async () => {
   const store = inject(Store);
   const router = inject(Router);
-  if (!iniciado) { iniciado = true; await store.iniciar(); }
+  await listo(store);
   const u = store.usuario();
   return u && u.activo ? true : router.parseUrl('/ingresar');
 };
-const roles = (...r: Rol[]): CanActivateFn => () => {
+const roles = (...r: Rol[]): CanActivateFn => async () => {
   const store = inject(Store);
-  return r.includes(store.rol()!) || inject(Router).parseUrl('/');
+  const router = inject(Router);
+  await listo(store);
+  return r.includes(store.rol()!) || router.parseUrl('/');
 };
 
 export const routes: Routes = [
